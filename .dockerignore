@@ -1,0 +1,10 @@
+.git
+target
+node_modules
+dist
+__pycache__
+.venv
+*.log
+.env
+.env.*
+*.lock.bak

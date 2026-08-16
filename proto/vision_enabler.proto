@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package vision_enabler;
+
+option go_package = "github.com/vision-enabler/proto";
+
+// The pixel format of a captured frame.
+enum PixelFormat {
+    PIXEL_FORMAT_UNSPECIFIED = 0;
+    PIXEL_FORMAT_RGBA8 = 1;
+    PIXEL_FORMAT_BGRA8 = 2;
+}
+
+// A single captured frame from a game engine viewport.
+message CapturedFrame {
+    uint32 width = 1;
+    uint32 height = 2;
+    PixelFormat format = 3;
+    bytes data = 4;
+    // Milliseconds since the engine started (monotonic clock).
+    uint64 timestamp_ms = 5;
+}
+
+// Empty acknowledgement.
+message FrameAck {
+    bool accepted = 1;
+}
+
+// Service for streaming captured frames to a remote collector.
+service FrameStreaming {
+    // Client-streaming RPC: client sends a stream of frames, server acks each.
+    rpc StreamFrames (stream CapturedFrame) returns (FrameAck);
+}

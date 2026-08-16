@@ -1,0 +1,48 @@
+[package]
+name = "radredeye-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Engine-agnostic viewport capture pipeline core."
+
+[features]
+default = ["file-sink", "http-sink", "semantic-diff"]
+file-sink = ["dep:image"]
+http-sink = ["dep:ureq"]
+websocket-sink = ["dep:tungstenite"]
+grpc-sink = ["dep:tonic", "dep:prost", "dep:tonic-build", "dep:tokio", "dep:tokio-stream"]
+# Semantic frame-diff sink (Phase 10.4). Default-on so its tests run under the
+# standard `cargo test --workspace` gate; the feature gate lets a downstream
+# consumer disable it. The pixel-fallback path (no RADREDEYE_DIFF_URL) is the
+# default; the semantic/model path is documented as requiring a review sink
+# (guardrails Law 4 — raw model output is never forwarded to agent-consumer
+# sinks). See `src/sinks/semantic_diff.rs`.
+semantic-diff = []
+
+[dependencies]
+thiserror.workspace = true
+tracing = "0.1"
+metrics = "0.24"
+image = { workspace = true, optional = true }
+ureq = { workspace = true, optional = true }
+tungstenite = { workspace = true, optional = true }
+tonic = { workspace = true, optional = true }
+prost = { workspace = true, optional = true }
+tokio = { version = "1", features = ["rt", "rt-multi-thread", "macros"], optional = true }
+tokio-stream = { version = "0.1", optional = true }
+
+[build-dependencies]
+tonic-build = { workspace = true, optional = true }
+
+[dev-dependencies]
+criterion = "0.5"
+image = { workspace = true }
+
+[[bench]]
+name = "submit_throughput"
+harness = false
+
+[[bench]]
+name = "resize_nearest"
+harness = false

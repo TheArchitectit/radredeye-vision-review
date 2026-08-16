@@ -1,0 +1,11 @@
+[package]
+name = "radredeye-bevy"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Bevy plugin for the radredeye capture pipeline."
+
+[dependencies]
+radredeye-core = { path = "../radredeye-core" }
+bevy.workspace = true

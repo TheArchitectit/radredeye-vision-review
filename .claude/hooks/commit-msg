@@ -1,0 +1,15 @@
+#!/bin/bash
+# Commit-msg Hook - validates commit message (AI attribution requirement)
+# Unlike pre-commit, git passes the commit-message file path as $1 here.
+set -euo pipefail
+
+COMMIT_MSG_FILE="$1"
+
+# Check for AI attribution in commit message
+if ! grep -qi "Co-Authored-By:" "$COMMIT_MSG_FILE"; then
+    echo "[ERROR] Commit message missing AI attribution"
+    echo "[INFO] Add: Co-Authored-By: Claude <noreply@anthropic.com>"
+    exit 1
+fi
+
+echo "[GUARDRAILS] Commit message validation passed"

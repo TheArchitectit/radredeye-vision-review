@@ -1,0 +1,117 @@
+name: Documentation Standards Check
+
+# Scoped to the PROJECT's own docs (docs/radredeye/ + root project docs).
+# The repo also carries a large agent-guardrails-template doc residue
+# (docs/, ide/, .cursor/, .opencode/, skills/, tests/) that is explicitly
+# out-of-scope for the Rust project (see AGENTS.md) and is intentionally NOT
+# scanned here, so this check stays meaningful instead of failing on legacy files.
+#
+# Hard gate: doc files must stay <= 500 lines (split via the SPEC/ROADMAP split).
+# Soft (warning-only): required sections, internal links, trailing whitespace.
+on:
+  pull_request:
+    paths:
+      - "docs/radredeye/**"
+      - "AGENTS.md"
+      - "STATUS.md"
+      - "CONTRIBUTING.md"
+      - "README.md"
+      - "ROADMAP.md"
+
+permissions:
+  contents: read
+
+jobs:
+  check-doc-length:
+    name: Document length (<= 500 lines, hard gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check line counts
+        run: |
+          echo "Checking project documentation for the 500-line limit..."
+          MAX_LINES=500
+          VIOLATIONS=""
+          for file in $(find docs/radredeye -name "*.md" 2>/dev/null) \
+                      AGENTS.md STATUS.md CONTRIBUTING.md README.md ROADMAP.md; do
+            [ -f "$file" ] || continue
+            lines=$(wc -l < "$file")
+            if [ "$lines" -gt "$MAX_LINES" ]; then
+              VIOLATIONS="${VIOLATIONS}$file: $lines lines (over $MAX_LINES limit)"$'\n'
+              echo "FAIL: $file has $lines lines (max $MAX_LINES)"
+            else
+              echo "OK:   $file has $lines lines"
+            fi
+          done
+          if [ -n "$VIOLATIONS" ]; then
+            echo "=========================================="
+            echo "VIOLATIONS FOUND:"
+            echo "$VIOLATIONS"
+            echo "Please split documents exceeding $MAX_LINES lines."
+            exit 1
+          else
+            echo "All project documents are within the $MAX_LINES line limit."
+          fi
+
+  check-required-sections:
+    name: Required sections (warning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for required sections
+        run: |
+          WARNINGS=""
+          for file in $(find docs/radredeye -name "*.md" 2>/dev/null); do
+            [ -f "$file" ] || continue
+            grep -q "^## Overview" "$file" || WARNINGS="${WARNINGS}$file: Missing '## Overview' section"$'\n'
+            grep -q "Last Updated:" "$file" || WARNINGS="${WARNINGS}$file: Missing 'Last Updated:' footer"$'\n'
+          done
+          if [ -n "$WARNINGS" ]; then
+            echo "WARNINGS (non-blocking):"; echo "$WARNINGS"
+          else
+            echo "All required sections present."
+          fi
+
+  check-broken-links:
+    name: Internal links (warning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check markdown links
+        run: |
+          BROKEN=""
+          for file in $(find docs/radredeye -name "*.md" 2>/dev/null) \
+                      AGENTS.md STATUS.md CONTRIBUTING.md README.md ROADMAP.md; do
+            [ -f "$file" ] || continue
+            links=$(grep -oE '\[[^]]+\]\(([^)]+\.md[^)]*)\)' "$file" 2>/dev/null \
+                     | sed -E 's/.*\(([^)]+)\).*/\1/' || true)
+            for link in $links; do
+              link_path=$(echo "$link" | cut -d'#' -f1)
+              case "$link_path" in
+                http*) continue ;;
+              esac
+              dir=$(dirname "$file")
+              full=$(realpath -m "$dir/$link_path" 2>/dev/null || echo "$dir/$link_path")
+              [ -f "$full" ] || BROKEN="${BROKEN}$file -> $link_path"$'\n'
+            done
+          done
+          if [ -n "$BROKEN" ]; then
+            echo "BROKEN LINKS (warning, non-blocking):"; echo "$BROKEN"
+          else
+            echo "All internal links valid."
+          fi
+
+  check-trailing-whitespace:
+    name: Trailing whitespace (warning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for trailing whitespace
+        run: |
+          FILES=$(find docs/radredeye -name "*.md" 2>/dev/null \
+                   | xargs grep -l " $" 2>/dev/null | grep -v node_modules || true)
+          if [ -n "$FILES" ]; then
+            echo "Files with trailing whitespace (warning):"; echo "$FILES"
+          else
+            echo "No trailing whitespace found."
+          fi

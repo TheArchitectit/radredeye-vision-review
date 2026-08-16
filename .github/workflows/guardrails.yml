@@ -1,0 +1,70 @@
+name: Guardrails & Safety Gates
+
+# Enforces the DevGate + agent-guardrails integration:
+#   - regression_check.py : file-size headroom + failure-registry scan (Rust-aware)
+#   - guardrails-scan.mjs : pattern-rules.json enforcement (full-tree)
+#   - cargo clippy        : warnings are errors
+#   - cargo audit         : supply-chain advisories (promote to blocking after triage)
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  regression-check:
+    name: Regression + file-size headroom
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run regression check (Rust-aware)
+        # Rust workspace has no npm audit / MEGACOMPACT settings — skip those two
+        # gates. --all scans the whole tree for files over the hard size limit.
+        run: python scripts/devgate/regression_check.py --all --no-audit --no-settings
+
+  pattern-scan:
+    name: Guardrails pattern scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run guardrails-scan.mjs
+        run: node scripts/devgate/guardrails-scan.mjs
+
+  clippy:
+    name: Clippy (warnings = errors)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Bevy system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libasound2-dev libudev-dev libwayland-dev libxkbcommon-dev pkg-config
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Clippy
+        run: cargo clippy --workspace -- -D warnings
+
+  cargo-audit:
+    name: Cargo audit (supply chain)
+    runs-on: ubuntu-latest
+    # TODO(promote-to-blocking): remove continue-on-error once the dependency
+    # tree has been triaged against rustsec advisories. Until then this job
+    # reports but does not block — the gate is wired and running, not yet hard.
+    continue-on-error: true
+    permissions:
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

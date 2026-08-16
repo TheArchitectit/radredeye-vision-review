@@ -1,0 +1,10 @@
+[package]
+name = "radredeye-unreal"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Unreal Engine adapter for radredeye — shared types and bridge client."
+
+[dependencies]
+radredeye-core = { path = "../radredeye-core", default-features = false }

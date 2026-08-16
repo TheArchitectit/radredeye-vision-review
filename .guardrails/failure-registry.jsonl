@@ -1,0 +1,21 @@
+# Failure Registry - Append-only log of bugs and failures
+# Format: One JSON object per line (JSONL)
+# DO NOT edit existing entries - only append new ones
+# Use scripts/log_failure.py to add entries consistently
+#
+# Schema:
+#   failure_id: UUID for the failure (FAIL-xxxxxxxx)
+#   timestamp: ISO 8601 timestamp
+#   category: build|runtime|test|type|lint|deploy|config|regression
+#   severity: low|medium|high|critical
+#   error_message: The actual error message
+#   root_cause: Why the failure occurred
+#   affected_files: List of files involved
+#   fix_commit: Git SHA of the fixing commit
+#   regression_pattern: Pattern that could reintroduce this
+#   prevention_rule: Specific rule to prevent recurrence
+#   status: active|resolved|deprecated
+#
+# Example entry:
+# {"failure_id": "FAIL-abc123de", "timestamp": "2026-02-07T10:00:00Z", "category": "runtime", "severity": "high", "error_message": "TypeError: Cannot read property of undefined", "root_cause": "Missing null check after JSON.parse", "affected_files": ["src/parser.js"], "fix_commit": "a1b2c3d", "regression_pattern": "JSON.parse\\(.*\\)\\.\\w+ without null check", "prevention_rule": "Always null-check parsed JSON before property access", "status": "active"}
+{"failure_id": "FAIL-0001", "timestamp": "2026-08-08T12:10:00Z", "category": "config", "severity": "high", "error_message": "No cargo audit / dependency vulnerability gate in CI or pre-commit for the Rust workspace", "root_cause": "Rust workspace shipped without a rustsec advisory check; known-vulnerable crate versions could merge silently", "affected_files": [".github/workflows/ci.yml", ".claude/hooks/pre-commit.sh", "Cargo.lock"], "fix_commit": "d8e0f14", "regression_pattern": "merge known-vulnerable|ship vulnerable crate|no dependency vulnerability gate", "prevention_rule": "Run cargo audit --deny warnings (rustsec/audit-check) in CI and pre-commit; never merge with advisory HIGH/CRITICAL", "status": "active"}

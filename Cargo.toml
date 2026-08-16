@@ -1,0 +1,21 @@
+[workspace]
+members = ["crates/*"]
+exclude = ["crates/radredeye-webxr"]
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/TheArchitectit/agent-guardrails-template"
+
+[workspace.dependencies]
+bevy = "0.15"
+thiserror = "1"
+image = { version = "0.25", default-features = false, features = ["png"] }
+ureq = "2"
+tiny_http = "0.12"
+tungstenite = { version = "0.24", default-features = false, features = ["handshake"] }
+tonic = "0.12"
+prost = "0.13"
+tonic-build = "0.12"
