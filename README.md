@@ -44,7 +44,7 @@ cargo run -p radredeye-mcp
 
 Example adapters that feed frames into the pipeline:
 
-- **Bevy** — `cargo run -p radredeye-bevy --example simple_capture` (plugin wires the pipeline; GPU framebuffer extraction is still a stub).
+- **Bevy** — `cargo run -p radredeye-bevy --example simple_capture` (plugin wires the pipeline; GPU framebuffer extraction via Bevy Screenshot system (verified compiling + running)).
 - **Godot** — enable the addon at `engines/godot/addons/radredeye_capture/` and set `emit_to_bridge = true` to POST PNGs to `http://127.0.0.1:8765/capture`.
 
 Any other app can capture by sending a base64 PNG via the `submit_frame` MCP tool or `POST /capture` — no engine SDK required.
